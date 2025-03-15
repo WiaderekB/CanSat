@@ -1,0 +1,2 @@
+void setupBuzzer();
+void startupSound();

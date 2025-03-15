@@ -4,6 +4,8 @@
 #include <SensorFusion.h>
 #include <StateMachine.h>
 #include <Telemetry.h>
+#include <Buzzer.h>
+#include <Led.h>
 
 StateMachine stateMachine;
 SensorFusion sensorFusion;
@@ -13,20 +15,21 @@ Telemetry telemetry;
 void setup()
 {
   SerialUSB.begin(115200);
-  while (!SerialUSB)
-    delay(10);
-  // pinMode(LED_PIN, OUTPUT);
-  // pinMode(BUZZER_PIN, OUTPUT);
-  // pinMode(BUTTON_PIN, INPUT_PULLUP);
+  setupLed();
 
+  stateMachine.init();
   sensorFusion.init();
   // telemetry.init();
   // loraManager.init();
-  stateMachine.init();
+  // setupBuzzer();
+
+  // startupSound();
+  startupBlink();
 }
 
 void loop()
 {
+
   sensorFusion.update();
   stateMachine.updateState(sensorFusion.getData());
 
