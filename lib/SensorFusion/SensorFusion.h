@@ -22,10 +22,8 @@ struct TempSensorData
 {
   float temperatureBMP;
   float temperatureBME;
-  float temperatureLM35;
   float pressureBMP;
   float pressureBME;
-  float humidityBME;
   float altitudeBMP;
   float altitudeBME;
   float altitudeGPS;
@@ -48,7 +46,6 @@ private:
   TempSensorData tempData;
   void readBME280();
   void readBMP280();
-  void readLM35();
   void readMPU6050();
   void readGPS();
   void fuseData();

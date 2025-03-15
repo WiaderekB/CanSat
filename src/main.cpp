@@ -13,10 +13,8 @@ Telemetry telemetry;
 void setup()
 {
   SerialUSB.begin(115200);
-
-  // while (!Serial)
-  //   ;
-
+  while (!SerialUSB)
+    delay(10);
   // pinMode(LED_PIN, OUTPUT);
   // pinMode(BUZZER_PIN, OUTPUT);
   // pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -51,5 +49,5 @@ void loop()
   //   }
   // }
 
-  delay(100); // Adjust based on required sampling rate
+  delay(10); // Adjust based on required sampling rate
 }

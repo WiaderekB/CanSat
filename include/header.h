@@ -9,8 +9,8 @@ const long LORA_FREQUENCY = 433;
 const int LORA_SYNC_WORD = 0x12;
 
 // Sensor addresses
-// #define BME280_ADDRESS 0x77
-// #define BMP280_ADDRESS 0x76
+#define BME280_ADD 0x77
+#define BMP280_ADD 0x76
 #define MPU6050_ADDRESS 0x68
 
 // Thresholds
