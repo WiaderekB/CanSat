@@ -1,9 +1,9 @@
 #pragma once
 
 // Pin definitions
-const int BUZZER_PIN = 4; // BUZZER_PIN D4
+const int BUZZER_PIN = 7; // BUZZER_PIN D7
 const int RGB_PIN = 2;    // RGB D2
-const int RGB_COUNT = 12;  // Number of RGB LEDs
+const int RGB_COUNT = 12; // Number of RGB LEDs
 
 // LoRa configuration
 const long LORA_FREQUENCY = 433;

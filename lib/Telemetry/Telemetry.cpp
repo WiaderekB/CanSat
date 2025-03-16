@@ -42,8 +42,6 @@ String Telemetry::formatData(const SensorData &data, ProbeState state)
   output += String(data.longitude, 6) + ",";
   output += String(data.satellites) + ",";
   output += String(data.GPSValid) + ",";
-  output += String(data.BMPValid) + ",";
-  output += String(data.BMEValid) + ",";
   output += String(data.acceleration[0]) + ",";
   output += String(data.acceleration[1]) + ",";
   output += String(data.acceleration[2]) + ",";

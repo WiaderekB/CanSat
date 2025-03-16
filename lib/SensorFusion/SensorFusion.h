@@ -12,10 +12,10 @@ struct SensorData
   float latitude;
   float orientation[3];
   float acceleration[3];
-  uint8_t satellites;
+  float velocity[3];
+  float rotationSpeed[3];
   bool GPSValid;
-  bool BMPValid;
-  bool BMEValid;
+  uint8_t satellites;
 };
 
 struct TempSensorData
@@ -29,8 +29,8 @@ struct TempSensorData
   float altitudeGPS;
   float longitudeGPS;
   float latitudeGPS;
-  float accelerometr[3];
-  float magnetometr[3];
+  float accelerometer[3];
+  float magnetometer[3];
   float gyro[3];
 };
 
@@ -47,6 +47,11 @@ private:
   void readBME280();
   void readBMP280();
   void readMPU6050();
+  void readBMM150();
   void readGPS();
   void fuseData();
+  void calculateAcceleration();
+  void calculateVelocity();
+  void printTempSensorData(TempSensorData tempData);
+  void printSensorData(SensorData sensorData);
 };

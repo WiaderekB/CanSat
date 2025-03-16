@@ -53,5 +53,5 @@ void loop()
   //   }
   // }
 
-  delay(10); // Adjust based on required sampling rate
+  // delay(10); // Adjust based on required sampling rate
 }
