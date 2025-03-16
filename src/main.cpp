@@ -16,6 +16,7 @@ void setup()
 {
   SerialUSB.begin(115200);
   setupLed();
+  startupBlink();
 
   stateMachine.init();
   sensorFusion.init();
@@ -24,7 +25,7 @@ void setup()
   // setupBuzzer();
 
   // startupSound();
-  startupBlink();
+  startupDone();
 }
 
 void loop()

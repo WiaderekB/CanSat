@@ -11,8 +11,6 @@ void setupLed()
 
 void startupBlink()
 {
-  SerialUSB.println("Blinking LED");
-
   pixels.clear();
 
   for (int i = 0; i < RGB_COUNT / 2; i++)
@@ -23,14 +21,16 @@ void startupBlink()
     delay(75);
   }
 
-  delay(200);
+  delay(150);
   for (int i = 0; i < RGB_COUNT; i++)
   {
     pixels.setPixelColor(i, pixels.Color(150, 150, 150));
   }
   pixels.show();
+}
 
-  delay(500);
+void startupDone()
+{
   for (int i = 11; i >= RGB_COUNT / 2; i--)
   {
     pixels.setPixelColor(i, pixels.Color(150, 0, 0));
