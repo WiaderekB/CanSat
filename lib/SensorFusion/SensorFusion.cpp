@@ -16,31 +16,60 @@ DFRobot_BMM150_I2C bmm150(&Wire, I2C_ADDRESS_4);
 
 // Sensor calibration
 #define ALPHA 0.75
-float hardIronOffset[3] = {6.6260, 6.9480, -3.5480};
-float softIronMatrix[3][3] = {{0.0849, 0.0000, 0.0000},
-                              {0.0000, 0.0567, 0.0000},
-                              {0.0000, 0.0000, 0.0509}};
+float hardIronOffset[3] = {3.6800, 4.8770, -79.2420};
+float softIronMatrix[3][3] = {{0.0578, 0.0000, 0.0000},
+                              {0.0000, 0.0503, 0.0000},
+                              {0.0000, 0.0000, 0.0465}};
 
 void SensorFusion::init()
 {
   Wire.begin();
-  bmp.begin(BMP280_ADD);
-  bme.begin(BME280_ADD);
-
+  if (bmp.begin(BMP280_ADD))
+  {
+    SerialUSB.println("BMP280 initialized");
+  }
+  else
+  {
+    SerialUSB.println("BMP280 initialization failed");
+  }
+  if (bme.begin(BME280_ADD))
+  {
+    SerialUSB.println("BME280 initialized");
+  }
+  else
+  {
+    SerialUSB.println("BME280 initialization failed");
+  }
   mpu.initialize();
-  mpu.setXAccelOffset(0);
-  mpu.setYAccelOffset(0);
-  mpu.setZAccelOffset(0);
-  mpu.setXGyroOffset(0);
-  mpu.setYGyroOffset(0);
-  mpu.setZGyroOffset(0);
-  mpu.CalibrateAccel(7);
-  mpu.CalibrateGyro(7);
+  if (mpu.testConnection())
+  {
+    SerialUSB.println("MPU6050 initialized");
+    mpu.setXAccelOffset(0);
+    mpu.setYAccelOffset(0);
+    mpu.setZAccelOffset(0);
+    mpu.setXGyroOffset(0);
+    mpu.setYGyroOffset(0);
+    mpu.setZGyroOffset(0);
+    mpu.CalibrateAccel(7);
+    mpu.CalibrateGyro(7);
+  }
+  else
+  {
+    SerialUSB.println("MPU6050 initialization failed");
+  }
 
   bmm150.begin();
-  bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
-  bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
-  bmm150.setMeasurementXYZ();
+  if (bmm150.getDataReadyState())
+  {
+    SerialUSB.println("BMM150 initialized");
+    bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
+    bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
+    bmm150.setMeasurementXYZ();
+  }
+  else
+  {
+    SerialUSB.println("BMM150 initialization failed");
+  }
 
   filter.begin();
 
@@ -59,8 +88,8 @@ void SensorFusion::update()
   calculateAcceleration();
   calculateVelocity();
 
-  // printTempSensorData(tempData);
-  printSensorData(finalData);
+  printTempSensorData(tempData);
+  // printSensorData(finalData);
 }
 
 void SensorFusion::readBME280()
@@ -224,13 +253,6 @@ void SensorFusion::calculateVelocity()
   finalData.velocity[0] += tempData.accelerometer[0] * dt;
   finalData.velocity[1] += tempData.accelerometer[1] * dt;
   finalData.velocity[2] += tempData.accelerometer[2] * dt;
-
-  // Integrate velocity for position (with respect to initial GPS position)
-  finalData.latitude += finalData.velocity[1] * dt / 111320;  // 1 degree latitude = ~111320 meters
-  finalData.longitude += finalData.velocity[0] * dt / 111320; // 1 degree longitude = ~111320 meters (approximated)
-
-  // For altitude, you can refine this with barometric pressure.
-  finalData.altitude += finalData.velocity[2] * dt;
 }
 
 const SensorData &SensorFusion::getData() const

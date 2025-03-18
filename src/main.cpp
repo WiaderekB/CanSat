@@ -6,11 +6,12 @@
 #include <Telemetry.h>
 #include <Buzzer.h>
 #include <Led.h>
+#include <LoRaManager.h>
 
 StateMachine stateMachine;
 SensorFusion sensorFusion;
 Telemetry telemetry;
-// LoRaManager loraManager;
+LoRaManager loraManager(stateMachine, sensorFusion);
 
 void setup()
 {
@@ -20,37 +21,36 @@ void setup()
 
   stateMachine.init();
   sensorFusion.init();
+  loraManager.init();
   // telemetry.init();
-  // loraManager.init();
   // setupBuzzer();
 
   // startupSound();
-  startupDone();
+  blinkDone();
 }
 
 void loop()
 {
-
   sensorFusion.update();
   stateMachine.updateState(sensorFusion.getData());
 
   // Handle telemetry
-  telemetry.logData(sensorFusion.getData(), stateMachine.getCurrentState());
-  // loraManager.sendTelemetry(sensorFusion.getData(), stateMachine.getCurrentState());
+  loraManager.sendTelemetry(sensorFusion.getData(), stateMachine.getCurrentState());
+  // telemetry.logData(sensorFusion.getData(), stateMachine.getCurrentState());
 
-  // // Handle incoming commands
+  // Handle incoming commands
   // loraManager.processIncoming();
 
   // // Handle SOS mode
   // if (stateMachine.getCurrentState() == ProbeState::GROUND)
   // {
-  //   digitalWrite(LED_PIN, HIGH);
-  //   tone(BUZZER_PIN, 1000);
+  // digitalWrite(LED_PIN, HIGH);
+  // tone(BUZZER_PIN, 1000);
 
-  //   if (digitalRead(BUTTON_PIN) == LOW)
-  //   {
-  //     loraManager.sendSOS();
-  //   }
+  // if (digitalRead(BUTTON_PIN) == LOW)
+  // {
+  //   loraManager.sendSOS();
+  // }
   // }
 
   // delay(10); // Adjust based on required sampling rate

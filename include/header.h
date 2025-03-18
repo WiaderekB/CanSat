@@ -6,8 +6,11 @@ const int RGB_PIN = 2;    // RGB D2
 const int RGB_COUNT = 12; // Number of RGB LEDs
 
 // LoRa configuration
-const long LORA_FREQUENCY = 433;
-const int LORA_SYNC_WORD = 0x12;
+#define LORA_CS 10
+#define LORA_DIO0 12
+#define LORA_FREQUENCY 433.0 // 433 MHz
+#define LORA_SYNC_WORD 0x12
+#define PACKET_LEN 46 // Fixed packet size
 
 // Sensor addresses
 #define BME280_ADD 0x77

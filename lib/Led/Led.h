@@ -1,3 +1,3 @@
 void setupLed();
 void startupBlink();
-void startupDone();
+void blinkDone();

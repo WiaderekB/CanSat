@@ -29,7 +29,7 @@ void startupBlink()
   pixels.show();
 }
 
-void startupDone()
+void blinkDone()
 {
   for (int i = 11; i >= RGB_COUNT / 2; i--)
   {
