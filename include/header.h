@@ -11,7 +11,7 @@ const int RGB_COUNT = 12; // Number of RGB LEDs
 #define LORA_FREQUENCY 433.0 // 433 MHz
 #define LORA_SYNC_WORD 0x12
 #define PACKET_LEN 46 // Fixed packet size
-
+#define LORA_TRANSMIT_INTERVAL 250
 // Sensor addresses
 #define BME280_ADD 0x77
 #define BMP280_ADD 0x76

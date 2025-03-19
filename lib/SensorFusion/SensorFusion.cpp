@@ -88,7 +88,7 @@ void SensorFusion::update()
   calculateAcceleration();
   calculateVelocity();
 
-  printTempSensorData(tempData);
+  // printTempSensorData(tempData);
   // printSensorData(finalData);
 }
 
