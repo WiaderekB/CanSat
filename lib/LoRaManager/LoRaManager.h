@@ -9,7 +9,7 @@ class LoRaManager
 public:
   LoRaManager(StateMachine &stateMachine, SensorFusion &sensorFusion);
   bool init();
-  void sendTelemetry(const SensorData &data, ProbeState state);
+  void sendTelemetry(const SensorData &data, const ProbeState &state);
   void processIncoming();
 
 private:
@@ -20,4 +20,5 @@ private:
 
   void handleCommand(uint8_t command);
   void sendSOS();
+  void preparePacket(const SensorData &data, const ProbeState &state, uint8_t *packet, int &index);
 };

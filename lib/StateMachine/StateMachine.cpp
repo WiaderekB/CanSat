@@ -87,7 +87,7 @@ void StateMachine::detectLanding(const SensorData &data)
   }
 }
 
-ProbeState StateMachine::getCurrentState() const
+const ProbeState &StateMachine::getCurrentState() const
 {
   return currentState;
 }

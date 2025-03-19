@@ -17,7 +17,7 @@ class StateMachine
 public:
   void init();
   void updateState(const SensorData &data);
-  ProbeState getCurrentState() const;
+  const ProbeState &getCurrentState() const;
 
 private:
   ProbeState currentState = ProbeState::STANDBY;
