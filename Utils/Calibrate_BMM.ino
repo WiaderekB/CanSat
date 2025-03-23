@@ -3,7 +3,7 @@
 
 DFRobot_BMM150_I2C bmm150(&Wire, I2C_ADDRESS_4);
 
-const int MAX_SAMPLES = 1000;
+const int MAX_SAMPLES = 1500;
 float samplesX[MAX_SAMPLES];
 float samplesY[MAX_SAMPLES];
 float samplesZ[MAX_SAMPLES];
@@ -31,7 +31,7 @@ void setup()
   bmm150.setMeasurementXYZ();
 
   SerialUSB.println("Move sensor in all directions for 15 seconds...");
-  delay(15000); // Auto-stop after 15 seconds
+  delay(1500); // Auto-stop after 15 seconds
   calibrating = false;
   computeCalibrationParameters();
   printCalibrationParameters();
@@ -97,6 +97,7 @@ void computeCalibrationParameters()
   softIronMatrix[0][0] = 1 / sqrt(cov[0]);
   softIronMatrix[1][1] = 1 / sqrt(cov[1]);
   softIronMatrix[2][2] = 1 / sqrt(cov[2]);
+  delay(5);
 }
 
 void printCalibrationParameters()
