@@ -16,8 +16,8 @@ LoRaManager loraManager(stateMachine, sensorFusion);
 void setup()
 {
   SerialUSB.begin(115200);
-  // while (!SerialUSB)
-  // ;
+  while (!SerialUSB)
+    ;
 
   SerialUSB.println("Starting up...");
   setupLed();
@@ -27,9 +27,9 @@ void setup()
   sensorFusion.init();
   loraManager.init();
   // telemetry.init();
-  // setupBuzzer();
+  setupBuzzer();
 
-  // startupSound();
+  startupSound();
   blinkDone();
 }
 

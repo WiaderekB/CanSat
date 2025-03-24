@@ -16,15 +16,15 @@ DFRobot_BMM150_I2C bmm150(&Wire, I2C_ADDRESS_4);
 
 // Sensor calibration
 #define ALPHA 0.75
-float hardIronOffset[3] = {3.6800, 4.8770, -79.2420};
-float softIronMatrix[3][3] = {{0.0578, 0.0000, 0.0000},
+float hardIronOffset[3] = {1.3080, 2.3450, -24.1910};
+float softIronMatrix[3][3] = {{0.0678, 0.0000, 0.0000},
                               {0.0000, 0.0503, 0.0000},
                               {0.0000, 0.0000, 0.0465}};
 
 void SensorFusion::init()
 {
   Wire.begin();
-  if (bmp.begin(BMP280_ADD))
+  if (bmp.begin())
   {
     SerialUSB.println("BMP280 initialized");
   }
@@ -32,7 +32,7 @@ void SensorFusion::init()
   {
     SerialUSB.println("BMP280 initialization failed");
   }
-  if (bme.begin(BME280_ADD))
+  if (bme.begin())
   {
     SerialUSB.println("BME280 initialized");
   }
@@ -58,12 +58,12 @@ void SensorFusion::init()
     SerialUSB.println("MPU6050 initialization failed");
   }
 
-  bmm150.begin();
-  if (bmm150.getDataReadyState())
+  if (bmm150.begin() == BMM150_OK)
   {
     SerialUSB.println("BMM150 initialized");
     bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
     bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
+    bmm150.setRate(BMM150_DATA_RATE_10HZ);
     bmm150.setMeasurementXYZ();
   }
   else
@@ -74,7 +74,15 @@ void SensorFusion::init()
   filter.begin();
 
   // GPS initialization
-  Serial1.begin(9600); // GPS module on Serial
+  Serial.begin(9600);
+  if (Serial)
+  {
+    SerialUSB.println("GPS initialized");
+  }
+  else
+  {
+    SerialUSB.println("GPS initialization failed");
+  }
 }
 
 void SensorFusion::update()
@@ -135,7 +143,6 @@ void SensorFusion::readBMM150()
 {
   sBmm150MagData_t magData = bmm150.getGeomagneticData();
 
-  // Apply hard-iron correction
   float x = magData.x - hardIronOffset[0];
   float y = magData.y - hardIronOffset[1];
   float z = magData.z - hardIronOffset[2];
@@ -157,7 +164,7 @@ void SensorFusion::readGPS()
   {
     char received = Serial.read();
 
-    // SerialUSB.print(received);
+    SerialUSB.print(received);
     finalData.GPSValid = true;
   }
   else
@@ -208,39 +215,34 @@ void SensorFusion::calculateAcceleration()
   const float cy = cos(yaw);
   const float sy = sin(yaw);
 
-  // Correct rotation matrix (body to world frame)
-  // ZYX Tait-Bryan angles (yaw, pitch, roll)
-  R[0] = cy * cp;
-  R[1] = cy * sp * sr - sy * cr;
-  R[2] = cy * sp * cr + sy * sr;
-
-  R[3] = sy * cp;
-  R[4] = sy * sp * sr + cy * cr;
-  R[5] = sy * sp * cr - cy * sr;
-
-  R[6] = -sp;
-  R[7] = cp * sr;
-  R[8] = cp * cr;
-
   // Get raw accelerometer data (assuming m/s²)
   const float ax = tempData.accelerometer[0];
   const float ay = tempData.accelerometer[1];
   const float az = tempData.accelerometer[2];
 
-  // Transform to world frame (NED coordinates)
-  float world_acc_x = R[0] * ax + R[1] * ay + R[2] * az;
-  float world_acc_y = R[3] * ax + R[4] * ay + R[5] * az;
-  float world_acc_z = R[6] * ax + R[7] * ay + R[8] * az;
+  // Construct rotation matrix (ZYX order)
+  float R00 = cy * cp;
+  float R01 = cy * sp * sr - sy * cr;
+  float R02 = cy * sp * cr + sy * sr;
 
-  // Remove gravity (NED frame has +Z downward)
-  constexpr float GRAVITY = 9.80665f;
-  world_acc_z -= GRAVITY;
+  float R10 = sy * cp;
+  float R11 = sy * sp * sr + cy * cr;
+  float R12 = sy * sp * cr - cy * sr;
+
+  float R20 = -sp;
+  float R21 = cp * sr;
+  float R22 = cp * cr;
+
+  // Apply rotation to accelerometer data
+  float ax_world = R00 * ax + R01 * ay + R02 * az;
+  float ay_world = R10 * ax + R11 * ay + R12 * az;
+  float az_world = R20 * ax + R21 * ay + R22 * az - 9.81;
 
   // Apply complementary filter to reduce noise
   constexpr float FILTER_GAIN = 0.15f;
-  finalData.acceleration[0] = FILTER_GAIN * world_acc_x + (1 - FILTER_GAIN) * finalData.acceleration[0];
-  finalData.acceleration[1] = FILTER_GAIN * world_acc_y + (1 - FILTER_GAIN) * finalData.acceleration[1];
-  finalData.acceleration[2] = FILTER_GAIN * world_acc_z + (1 - FILTER_GAIN) * finalData.acceleration[2];
+  finalData.acceleration[0] = FILTER_GAIN * ax_world + (1 - FILTER_GAIN) * finalData.acceleration[0];
+  finalData.acceleration[1] = FILTER_GAIN * ay_world + (1 - FILTER_GAIN) * finalData.acceleration[1];
+  finalData.acceleration[2] = FILTER_GAIN * az_world + (1 - FILTER_GAIN) * finalData.acceleration[2];
 }
 
 void SensorFusion::calculateVelocity()
@@ -250,9 +252,9 @@ void SensorFusion::calculateVelocity()
   float dt = (millis() - prevTime) / 1000.0f; // Time in seconds
   prevTime = millis();
 
-  finalData.velocity[0] += tempData.accelerometer[0] * dt;
-  finalData.velocity[1] += tempData.accelerometer[1] * dt;
-  finalData.velocity[2] += tempData.accelerometer[2] * dt;
+  finalData.velocity[0] += finalData.acceleration[0] * dt;
+  finalData.velocity[1] += finalData.acceleration[1] * dt;
+  finalData.velocity[2] += finalData.acceleration[2] * dt;
 }
 
 const SensorData &SensorFusion::getData() const
@@ -340,7 +342,12 @@ void SensorFusion::printTempSensorData(TempSensorData tempData)
   SerialUSB.print(" hPa, ");
 
   SerialUSB.print("Altitude: ");
-  SerialUSB.println(tempData.altitudeBME);
+  SerialUSB.print(tempData.altitudeBME);
+  SerialUSB.print(" m, ");
+
+  SerialUSB.print("Humidity: ");
+  SerialUSB.print(finalData.humidity);
+  SerialUSB.println(" %");
 
   SerialUSB.print("BMP280 - Temp: ");
   SerialUSB.print(tempData.temperatureBMP);
