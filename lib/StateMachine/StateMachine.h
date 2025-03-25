@@ -9,7 +9,8 @@ enum class ProbeState
   FLIGHT,
   APOGEE,
   DESCENT,
-  GROUND
+  GROUND,
+  SOS
 };
 
 class StateMachine
@@ -17,6 +18,7 @@ class StateMachine
 public:
   int init();
   void updateState(const SensorData &data);
+  void setProbeState(ProbeState state);
   const ProbeState &getCurrentState() const;
 
 private:

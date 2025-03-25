@@ -92,3 +92,8 @@ const ProbeState &StateMachine::getCurrentState() const
 {
   return currentState;
 }
+
+void StateMachine::setProbeState(ProbeState state)
+{
+  currentState = state;
+}

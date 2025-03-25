@@ -8,11 +8,13 @@
 #include <Buzzer.h>
 #include <Led.h>
 #include <LoRaManager.h>
+#include <Button.h>
 
 StateMachine stateMachine;
 SensorFusion sensorFusion;
 Telemetry telemetry;
 LoRaManager loraManager(stateMachine, sensorFusion);
+Button button(stateMachine);
 
 void setup()
 {

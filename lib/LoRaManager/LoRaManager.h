@@ -19,6 +19,5 @@ private:
   uint16_t lastTransmitted = 0;
 
   void handleCommand(uint8_t command);
-  void sendSOS();
   void preparePacket(const SensorData &data, const ProbeState &state, uint8_t *packet, int &index);
 };

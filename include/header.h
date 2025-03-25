@@ -27,6 +27,7 @@ const int BUTTON_PIN = 3; // BUTTON_PIN D3
 const float LAUNCH_ACCEL_THRESHOLD = 1.5;  // g
 const float LANDING_ACCEL_THRESHOLD = 0.2; // g
 const int APOGEE_DELAY_MS = 2000;
+const int BUTTON_THRESHOLD_MS = 2000;
 
 #define RED 0xFF2D00     // Bright red
 #define GREEN 0x00D26A   // Vibrant green

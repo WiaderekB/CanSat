@@ -21,7 +21,7 @@ bool Telemetry::init()
   return true;
 }
 
-void Telemetry::logData(const SensorData &data, ProbeState state)
+void Telemetry::logData(const SensorData &data, const ProbeState &state)
 {
   if (!sdInitialized)
     return;
@@ -34,7 +34,7 @@ void Telemetry::logData(const SensorData &data, ProbeState state)
   }
 }
 
-String Telemetry::formatData(const SensorData &data, ProbeState state)
+String Telemetry::formatData(const SensorData &data, const ProbeState &state)
 {
   String output;
   output += String(millis()) + ",";

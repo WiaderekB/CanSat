@@ -8,11 +8,11 @@ class Telemetry
 {
 public:
   bool init();
-  void logData(const SensorData &data, ProbeState state);
+  void logData(const SensorData &data, const ProbeState &state);
 
 private:
   File logFile;
   bool sdInitialized = false;
 
-  String formatData(const SensorData &data, ProbeState state);
+  String formatData(const SensorData &data, const ProbeState &state);
 };
