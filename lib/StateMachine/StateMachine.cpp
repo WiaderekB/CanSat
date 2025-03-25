@@ -11,9 +11,6 @@ void StateMachine::updateState(const SensorData &data)
 {
   switch (currentState)
   {
-  case ProbeState::STANDBY:
-    break;
-
   case ProbeState::ARMED:
     detectLaunch(data);
     break;
@@ -31,10 +28,6 @@ void StateMachine::updateState(const SensorData &data)
 
   case ProbeState::DESCENT:
     detectLanding(data);
-    break;
-
-  case ProbeState::GROUND:
-    // Handle SOS mode
     break;
   }
 }

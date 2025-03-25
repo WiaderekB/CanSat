@@ -1,6 +1,7 @@
 #pragma once
 #include "../../include/header.h"
 #include <stdint.h>
+#include <Arduino.h>
 
 struct SensorData
 {
@@ -20,15 +21,8 @@ struct SensorData
 
 struct TempSensorData
 {
-  float temperatureBMP;
-  float temperatureBME;
-  float pressureBMP;
-  float pressureBME;
-  float altitudeBMP;
   float altitudeBME;
   float altitudeGPS;
-  float longitudeGPS;
-  float latitudeGPS;
   float accelerometer[3];
   float magnetometer[3];
   float gyro[3];
@@ -44,14 +38,19 @@ public:
 private:
   SensorData finalData;
   TempSensorData tempData;
+  String gpsBuffer;
+  uint32_t lastGpsTime = 0;
+
   void readBME280();
-  void readBMP280();
   void readMPU6050();
   void readBMM150();
   void readGPS();
+  void processGPSData(String nmeaSentence);
+  void parseGGA(String ggaSentence);
+  float convertToDecimalDegrees(float nmeaCoord, String direction);
+
   void fuseData();
   void calculateAcceleration();
   void calculateVelocity();
-  void printTempSensorData(TempSensorData tempData);
   void printSensorData(SensorData sensorData);
 };

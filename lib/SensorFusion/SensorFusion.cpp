@@ -24,14 +24,7 @@ float softIronMatrix[3][3] = {{0.0678, 0.0000, 0.0000},
 int SensorFusion::init()
 {
   Wire.begin();
-  // if (bmp.begin())
-  // {
-  //   SerialUSB.println("BMP280 initialized");
-  // }
-  // else
-  // {
-  //   SerialUSB.println("BMP280 initialization failed");
-  // }
+
   if (bme.begin())
   {
     SerialUSB.println("BME280 initialized");
@@ -94,7 +87,6 @@ int SensorFusion::init()
 void SensorFusion::update()
 {
   readBME280();
-  readBMP280();
   readMPU6050();
   readBMM150();
   readGPS();
@@ -102,22 +94,15 @@ void SensorFusion::update()
   calculateAcceleration();
   calculateVelocity();
 
-  // printTempSensorData(tempData);
   // printSensorData(finalData);
 }
 
 void SensorFusion::readBME280()
 {
-  tempData.temperatureBME = bme.readTemperature();
-  tempData.pressureBME = bme.readPressure() / 100;
+  finalData.temperature = bme.readTemperature();
+  finalData.pressure = bme.readPressure() / 100;
   finalData.humidity = bme.readHumidity();
   tempData.altitudeBME = bme.readAltitude(1013.25);
-}
-void SensorFusion::readBMP280()
-{
-  tempData.temperatureBMP = bmp.readTemperature();
-  tempData.pressureBMP = bmp.readPressure() / 100;
-  tempData.altitudeBMP = bmp.readAltitude(1013.25);
 }
 
 void SensorFusion::readMPU6050()
@@ -165,18 +150,97 @@ void SensorFusion::readBMM150()
 
 void SensorFusion::readGPS()
 {
-
-  if (Serial.available())
+  while (Serial.available() > 0)
   {
     char received = Serial.read();
-
-    SerialUSB.print(received);
-    finalData.GPSValid = true;
+    if (received == '\n')
+    {
+      processGPSData(gpsBuffer);
+      gpsBuffer = ""; // Reset buffer after processing
+    }
+    else
+    {
+      gpsBuffer += received;
+    }
   }
-  else
+}
+
+void SensorFusion::processGPSData(String nmeaSentence)
+{
+  if (nmeaSentence.startsWith("$GPGGA"))
+  {
+    SerialUSB.println("GGA Sentence Found: " + nmeaSentence);
+    parseGGA(nmeaSentence);
+  }
+}
+
+void SensorFusion::parseGGA(String ggaSentence)
+{
+  char *str = const_cast<char *>(ggaSentence.c_str());
+  char *token = strtok(str, ",");
+  int fieldIndex = 0;
+
+  String lat, latDir, lon, lonDir, numSat, altitude;
+
+  while (token != NULL)
+  {
+    switch (fieldIndex)
+    {
+
+    case 2:
+      lat = token;
+      break;
+    case 3:
+      latDir = token;
+      break;
+    case 4:
+      lon = token;
+      break;
+    case 5:
+      lonDir = token;
+      break;
+    case 7:
+      numSat = token;
+      break;
+    case 9:
+      altitude = token;
+      break;
+    }
+    token = strtok(NULL, ",");
+    fieldIndex++;
+  }
+
+  if (lat.length() > 0 && lon.length() > 0 && altitude.length() > 0)
+  {
+    finalData.GPSValid = true;
+    lastGpsTime = millis();
+
+    finalData.latitude = convertToDecimalDegrees(std::stod(lat), latDir);
+    finalData.longitude = convertToDecimalDegrees(std::stod(lon), lonDir);
+    tempData.altitudeGPS = altitude.toFloat();
+    finalData.satellites = numSat.toInt();
+
+    SerialUSB.print("Latitude: ");
+    SerialUSB.print(finalData.latitude);
+    SerialUSB.print(", Longitude: ");
+    SerialUSB.println(finalData.longitude);
+  }
+  else if (millis() - lastGpsTime > 750)
   {
     finalData.GPSValid = false;
   }
+}
+
+float SensorFusion::convertToDecimalDegrees(float nmeaCoord, String direction)
+{
+  int degrees = (int)(nmeaCoord / 100);
+  float minutes = nmeaCoord - (degrees * 100);
+  float decimalDegrees = degrees + (minutes / 60);
+  if (direction == "S" || direction == "W")
+  {
+    decimalDegrees *= -1;
+  }
+  return decimalDegrees;
 }
 
 void SensorFusion::fuseData()
@@ -192,22 +256,16 @@ void SensorFusion::fuseData()
   finalData.altitude = tempData.altitudeBME;
   if (finalData.GPSValid)
   {
-    finalData.altitude = (finalData.altitude + tempData.altitudeGPS) / 2; // GPS altitude
+    finalData.altitude = tempData.altitudeGPS; // GPS altitude
   }
 
   finalData.rotationSpeed[0] = tempData.gyro[0]; // Rotation around X-axis
   finalData.rotationSpeed[1] = tempData.gyro[1]; // Rotation around Y-axis
   finalData.rotationSpeed[2] = tempData.gyro[2]; // Rotation around Z-axis
-
-  finalData.temperature = tempData.temperatureBME;
-  finalData.pressure = tempData.pressureBME;
-  finalData.latitude = tempData.latitudeGPS;
-  finalData.longitude = tempData.longitudeGPS;
 }
 
 void SensorFusion::calculateAcceleration()
 {
-  float R[9];
   const float roll = finalData.orientation[0];
   const float pitch = finalData.orientation[1];
   const float yaw = finalData.orientation[2];
@@ -270,6 +328,26 @@ const SensorData &SensorFusion::getData() const
 void SensorFusion::printSensorData(SensorData sensorData)
 {
   SerialUSB.println("--- Sensor Data ---");
+  SerialUSB.print("BMM150 - Mag X: ");
+  SerialUSB.print(tempData.magnetometer[0]);
+  SerialUSB.print(" µT, Y: ");
+  SerialUSB.print(tempData.magnetometer[1]);
+  SerialUSB.print(" µT, Z: ");
+  SerialUSB.println(tempData.magnetometer[2]);
+
+  SerialUSB.print("MPU6050 - Accel X: ");
+  SerialUSB.print(tempData.accelerometer[0]);
+  SerialUSB.print(" m/s², Y: ");
+  SerialUSB.print(tempData.accelerometer[1]);
+  SerialUSB.print(" m/s², Z: ");
+  SerialUSB.println(tempData.accelerometer[2]);
+
+  SerialUSB.print("MPU6050 - Gyro X: ");
+  SerialUSB.print(tempData.gyro[0]);
+  SerialUSB.print(" °/s, Y: ");
+  SerialUSB.print(tempData.gyro[1]);
+  SerialUSB.print(" °/s, Z: ");
+  SerialUSB.println(tempData.gyro[2]);
 
   // Print SensorData fields
   SerialUSB.print("Temperature: ");
@@ -329,62 +407,6 @@ void SensorFusion::printSensorData(SensorData sensorData)
 
   SerialUSB.print("Satellites: ");
   SerialUSB.println(sensorData.satellites);
-
-  SerialUSB.println("--------------------------");
-}
-
-void SensorFusion::printTempSensorData(TempSensorData tempData)
-{
-  SerialUSB.println("--- Raw Temp Sensor Data ---");
-
-  // Print TempSensorData fields
-  SerialUSB.print("BME280 - Temp: ");
-  SerialUSB.print(tempData.temperatureBME);
-  SerialUSB.print(" °C, ");
-
-  SerialUSB.print("Pressure: ");
-  SerialUSB.print(tempData.pressureBME);
-  SerialUSB.print(" hPa, ");
-
-  SerialUSB.print("Altitude: ");
-  SerialUSB.print(tempData.altitudeBME);
-  SerialUSB.print(" m, ");
-
-  SerialUSB.print("Humidity: ");
-  SerialUSB.print(finalData.humidity);
-  SerialUSB.println(" %");
-
-  SerialUSB.print("BMP280 - Temp: ");
-  SerialUSB.print(tempData.temperatureBMP);
-  SerialUSB.print(" °C, ");
-
-  SerialUSB.print("Pressure: ");
-  SerialUSB.print(tempData.pressureBMP);
-  SerialUSB.print(" hPa, ");
-
-  SerialUSB.print("Altitude: ");
-  SerialUSB.println(tempData.altitudeBMP);
-
-  SerialUSB.print("BMM150 - Mag X: ");
-  SerialUSB.print(tempData.magnetometer[0]);
-  SerialUSB.print(" µT, Y: ");
-  SerialUSB.print(tempData.magnetometer[1]);
-  SerialUSB.print(" µT, Z: ");
-  SerialUSB.println(tempData.magnetometer[2]);
-
-  SerialUSB.print("MPU6050 - Accel X: ");
-  SerialUSB.print(tempData.accelerometer[0]);
-  SerialUSB.print(" m/s², Y: ");
-  SerialUSB.print(tempData.accelerometer[1]);
-  SerialUSB.print(" m/s², Z: ");
-  SerialUSB.println(tempData.accelerometer[2]);
-
-  SerialUSB.print("MPU6050 - Gyro X: ");
-  SerialUSB.print(tempData.gyro[0]);
-  SerialUSB.print(" °/s, Y: ");
-  SerialUSB.print(tempData.gyro[1]);
-  SerialUSB.print(" °/s, Z: ");
-  SerialUSB.println(tempData.gyro[2]);
 
   SerialUSB.println("--------------------------");
 }
