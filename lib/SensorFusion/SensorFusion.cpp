@@ -94,7 +94,8 @@ void SensorFusion::update()
   calculateAcceleration();
   calculateVelocity();
 
-  // printSensorData(finalData);
+  if (SerialUSB)
+    printSensorData(finalData);
 }
 
 void SensorFusion::readBME280()
@@ -215,15 +216,10 @@ void SensorFusion::parseGGA(String ggaSentence)
     finalData.GPSValid = true;
     lastGpsTime = millis();
 
-    finalData.latitude = convertToDecimalDegrees(std::stod(lat), latDir);
-    finalData.longitude = convertToDecimalDegrees(std::stod(lon), lonDir);
+    finalData.latitude = convertToDecimalDegrees(lat.toFloat(), latDir);
+    finalData.longitude = convertToDecimalDegrees(lon.toFloat(), lonDir);
     tempData.altitudeGPS = altitude.toFloat();
     finalData.satellites = numSat.toInt();
-
-    SerialUSB.print("Latitude: ");
-    SerialUSB.print(finalData.latitude);
-    SerialUSB.print(", Longitude: ");
-    SerialUSB.println(finalData.longitude);
   }
   else if (millis() - lastGpsTime > 750)
   {

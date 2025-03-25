@@ -22,10 +22,7 @@ bool buzzerState, ledState = false;
 void setup()
 {
   SerialUSB.begin(115200);
-  while (!SerialUSB)
-    ;
 
-  SerialUSB.println("Starting up...");
   setupLed();
   startupBlink();
 

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Cansat Telemetry Dashboard</title>
+		<link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet" />
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+		<style>
+			:root {
+				--bg-color: #1a1a1a;
+				--card-bg: #2d2d2d;
+				--primary: #2194ce;
+			}
+			body {
+				background: var(--bg-color);
+				color: #fff;
+				margin: 0;
+				height: 100vh;
+			}
+			.card {
+				background: var(--card-bg);
+				border: 1px solid #3d3d3d;
+				border-radius: 15px;
+				height: 100%;
+			}
+			.card-title {
+				color: #fff;
+			}
+			.chart-container {
+				height: 200px;
+			}
+			.value-display {
+				font-size: 1.5rem;
+				font-weight: 300;
+			}
+			#model-container {
+				height: 500px;
+				background: #000;
+				border-radius: 10px;
+			}
+			#map {
+				height: 300px;
+				width: 100%;
+				border-radius: 10px;
+			}
+			.container-fluid {
+				height: calc(100vh - 20px);
+				padding: 10px;
+			}
+			.row.g-3 {
+				height: 100%;
+			}
+			.acc {
+				color: #4bc0c0;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container-fluid py-3">
+			<h1 class="text-center mb-4">CANSAT TELEMETRY DASHBOARD</h1>
+
+			<div class="row g-3" style="height: calc(100% - 60px)">
+				<!-- Environmental Card -->
+				<div class="col-lg-4">
+					<div class="card">
+						<div class="card-body">
+							<h5 class="card-title"><i class="mdi mdi-thermometer"></i> Environment</h5>
+							<div class="row">
+								<div class="col-4 text-center">
+									<div class="value-display text-primary" id="temperature">-°C</div>
+									<small>Temperature</small>
+								</div>
+								<div class="col-4 text-center">
+									<div class="value-display text-info" id="pressure">- hPa</div>
+									<small>Pressure</small>
+								</div>
+								<div class="col-4 text-center">
+									<div class="value-display text-success" id="humidity">-%</div>
+									<small>Humidity</small>
+								</div>
+							</div>
+							<div class="chart-container mt-3">
+								<canvas id="envChartT"></canvas>
+							</div>
+							<div class="chart-container mt-3">
+								<canvas id="envChartP"></canvas>
+							</div>
+							<div class="chart-container mt-3">
+								<canvas id="envChartH"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 3D Model Section -->
+				<div class="col-lg-4">
+					<div class="card">
+						<div class="card-body">
+							<h5 class="card-title"><i class="mdi mdi-axis-arrow"></i> Orientation</h5>
+							<div id="model-container"></div>
+							<div class="mt-3">
+								<div class="row text-center">
+									<div class="col-4">
+										<div class="value-display acc" id="accX">-g</div>
+										<small>Accel X</small>
+									</div>
+									<div class="col-4">
+										<div class="value-display acc" id="accY">-g</div>
+										<small>Accel Y</small>
+									</div>
+									<div class="col-4">
+										<div class="value-display acc" id="accZ">-g</div>
+										<small>Accel Z</small>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- GPS & Altitude -->
+				<div class="col-lg-4">
+					<div class="card">
+						<div class="card-body">
+							<h5 class="card-title"><i class="mdi mdi-map-marker"></i> Position</h5>
+							<div id="map"></div>
+							<div class="row mt-3">
+								<div class="col-6">
+									<div class="value-display text-warning" id="altitude">- m</div>
+									<small>Altitude</small>
+								</div>
+								<div class="col-6 text-end">
+									<div class="badge bg-danger" id="gps-status">NO FIX</div>
+									<div class="text-muted">
+										<small>Satellites: <span id="satellites">0</span></small>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+		<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+		<script>
+			const socket = io();
+			let envChartT, envChartP, envChart, model, controls;
+
+			// Initialize Environment Chart
+			function initChart() {
+				const ctx1 = document.getElementById("envChartT").getContext("2d");
+				envChartT = new Chart(ctx1, {
+					type: "line",
+					data: {
+						labels: [],
+						datasets: [{ label: "Temp (°C)", data: [], borderColor: "#2194ce", tension: 0.3 }],
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: { y: { beginAtZero: false } },
+					},
+				});
+				const ctx2 = document.getElementById("envChartP").getContext("2d");
+				envChartP = new Chart(ctx2, {
+					type: "line",
+					data: {
+						labels: [],
+						datasets: [{ label: "Pressure (hPa)", data: [], borderColor: "#36a2eb", tension: 0.3 }],
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: { y: { beginAtZero: false } },
+					},
+				});
+				const ctx3 = document.getElementById("envChartH").getContext("2d");
+				envChartH = new Chart(ctx3, {
+					type: "line",
+					data: {
+						labels: [],
+						datasets: [{ label: "Humidity (%)", data: [], borderColor: "#4bc0c0", tension: 0.3 }],
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: { y: { beginAtZero: false } },
+					},
+				});
+			}
+
+			// 3D Model Setup
+			const scene = new THREE.Scene();
+			const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+			const renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setSize(document.getElementById("model-container").offsetWidth, 500);
+			document.getElementById("model-container").appendChild(renderer.domElement);
+
+			// Model Loading
+			new THREE.STLLoader().load("/models/cansat.stl", (geometry) => {
+				geometry.center();
+				const material = new THREE.MeshPhongMaterial({
+					color: 0x2194ce,
+					specular: 0x555555,
+					shininess: 100,
+				});
+				model = new THREE.Mesh(geometry, material);
+				model.scale.set(0.01, 0.01, 0.01);
+
+				// Add bounding box helper
+				const box = new THREE.BoxHelper(model, 0xffff00);
+				scene.add(box);
+
+				scene.add(model);
+
+				// Set camera position
+				camera.position.set(1, 1, 2);
+				camera.lookAt(0, 0, 0);
+
+				// Add controls
+				controls = new THREE.OrbitControls(camera, renderer.domElement);
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.05;
+			});
+
+			// Lighting
+			scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+			const light = new THREE.DirectionalLight(0xffffff, 1);
+			light.position.set(5, 5, 5);
+			scene.add(light);
+
+			// Animation
+			function animate() {
+				requestAnimationFrame(animate);
+				if (controls) controls.update();
+				renderer.render(scene, camera);
+			}
+			animate();
+
+			// Leaflet Map
+			const map = L.map("map", {
+				center: [0, 0],
+				zoom: 2,
+				zoomControl: false,
+			}).setView([0, 0], 1);
+			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+			const marker = L.marker([0, 0]).addTo(map);
+			setTimeout(() => map.invalidateSize(), 100);
+
+			// Data Handling
+			socket.on("update", (data) => {
+				// Update displays
+				document.getElementById("temperature").textContent = data.temperature.toFixed(2) + "°C";
+				document.getElementById("pressure").textContent = data.pressure.toFixed(2) + "hPa";
+				document.getElementById("humidity").textContent = data.humidity.toFixed(2) + "%";
+				document.getElementById("altitude").textContent = data.altitude.toFixed(2) + "m";
+
+				// Update charts
+				updateChart(envChartT, [data.temperature]);
+				updateChart(envChartP, [data.pressure]);
+				updateChart(envChartH, [data.humidity]);
+
+				// Update 3D model
+				if (model) {
+					model.rotation.x = THREE.MathUtils.degToRad(data.orientation[1]);
+					model.rotation.y = THREE.MathUtils.degToRad(data.orientation[0]);
+					model.rotation.z = THREE.MathUtils.degToRad(data.orientation[2]);
+				}
+
+				// Update GPS
+				if (data.gps.valid) {
+					const newLatLng = new L.LatLng(data.gps.lat, data.gps.lon);
+					map.setView(newLatLng, 15);
+					marker.setLatLng(newLatLng);
+					document.getElementById("satellites").textContent = data.gps.satellites;
+					document.getElementById("gps-status").className = "badge bg-success";
+					document.getElementById("gps-status").textContent = "GPS FIX";
+				}
+
+				// Update acceleration
+				document.getElementById("accX").textContent = data.acceleration[0].toFixed(2) + "g";
+				document.getElementById("accY").textContent = data.acceleration[1].toFixed(2) + "g";
+				document.getElementById("accZ").textContent = data.acceleration[2].toFixed(2) + "g";
+			});
+
+			function updateChart(chart, values) {
+				const time = new Date().toLocaleTimeString();
+				chart.data.labels.push(time);
+
+				values.forEach((value, index) => {
+					chart.data.datasets[index].data.push(value);
+					if (chart.data.datasets[index].data.length > 15) {
+						chart.data.datasets[index].data.shift();
+					}
+				});
+
+				if (chart.data.labels.length > 15) chart.data.labels.shift();
+				chart.update();
+			}
+
+			// Initialize dashboard
+			initChart();
+			window.addEventListener("resize", () => {
+				map.invalidateSize();
+				renderer.setSize(document.getElementById("model-container").offsetWidth, 500);
+				camera.aspect = document.getElementById("model-container").offsetWidth / 500;
+				camera.updateProjectionMatrix();
+			});
+		</script>
+	</body>
+</html>
