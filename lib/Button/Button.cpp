@@ -16,13 +16,20 @@ void Button::checkButton(const ProbeState &state)
 
     if ((millis() - pressedSince) > BUTTON_THRESHOLD_MS && state == ProbeState::GROUND)
     {
-      stateMachine.setProbeState(ProbeState::SOS);
+      switch (state)
+      {
+      case ProbeState::GROUND:
+        stateMachine.setProbeState(ProbeState::SOS);
+        break;
+      case ProbeState::STANDBY:
+        stateMachine.setProbeState(ProbeState::ARMED);
+        break;
+      }
     }
 
     if (!pressed)
-    {
       pressedSince = millis();
-    }
+
     pressed = true;
   }
   else

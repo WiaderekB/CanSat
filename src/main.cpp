@@ -16,6 +16,9 @@ Telemetry telemetry;
 LoRaManager loraManager(stateMachine, sensorFusion);
 Button button(stateMachine);
 
+uint32_t buzzerOffSince, buzzerOnSince, ledOnSince, ledOffSince = 0;
+bool buzzerState, ledState = false;
+
 void setup()
 {
   SerialUSB.begin(115200);
@@ -47,6 +50,11 @@ void setup()
 
 void loop()
 {
+  button.checkButton(stateMachine.getCurrentState());
+
+  // if (stateMachine.getCurrentState() != ProbeState::STANDBY)
+  // {
+
   sensorFusion.update();
   stateMachine.updateState(sensorFusion.getData());
 
@@ -57,17 +65,36 @@ void loop()
   // Handle incoming commands
   // loraManager.processIncoming();
 
-  // // Handle SOS mode
-  // if (stateMachine.getCurrentState() == ProbeState::GROUND)
-  // {
-  // digitalWrite(LED_PIN, HIGH);
-  // tone(BUZZER_PIN, 1000);
+  // Handle SOS mode
+  if (stateMachine.getCurrentState() == ProbeState::GROUND)
+  {
 
-  // if (digitalRead(BUTTON_PIN) == LOW)
-  // {
-  //   loraManager.sendSOS();
-  // }
-  // }
+    if (ledState && millis() - ledOnSince > 250)
+    {
+      ledOffSince = millis();
+      ledState = false;
+      clearLed();
+    }
+    else if (!ledState && millis() - ledOffSince > 2000)
+    {
+      ledOnSince = millis();
+      ledState = true;
+      setLed(RED, {0, 1, 2, 3});
+      setLed(RED, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, UP);
+    }
 
-  // delay(10); // Adjust based on required sampling rate
+    if (buzzerState && millis() - buzzerOnSince > 500)
+    {
+      buzzerOffSince = millis();
+      buzzerState = false;
+      buzzerOff();
+    }
+    else if (!buzzerState && millis() - buzzerOffSince > 4000)
+    {
+      buzzerOnSince = millis();
+      buzzerState = true;
+      buzzerOn();
+    }
+  }
+  // }
 }
