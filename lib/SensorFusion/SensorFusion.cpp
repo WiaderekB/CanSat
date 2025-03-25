@@ -21,17 +21,17 @@ float softIronMatrix[3][3] = {{0.0678, 0.0000, 0.0000},
                               {0.0000, 0.0503, 0.0000},
                               {0.0000, 0.0000, 0.0465}};
 
-void SensorFusion::init()
+int SensorFusion::init()
 {
   Wire.begin();
-  if (bmp.begin())
-  {
-    SerialUSB.println("BMP280 initialized");
-  }
-  else
-  {
-    SerialUSB.println("BMP280 initialization failed");
-  }
+  // if (bmp.begin())
+  // {
+  //   SerialUSB.println("BMP280 initialized");
+  // }
+  // else
+  // {
+  //   SerialUSB.println("BMP280 initialization failed");
+  // }
   if (bme.begin())
   {
     SerialUSB.println("BME280 initialized");
@@ -39,7 +39,9 @@ void SensorFusion::init()
   else
   {
     SerialUSB.println("BME280 initialization failed");
+    return 1;
   }
+
   mpu.initialize();
   if (mpu.testConnection())
   {
@@ -56,6 +58,7 @@ void SensorFusion::init()
   else
   {
     SerialUSB.println("MPU6050 initialization failed");
+    return 1;
   }
 
   if (bmm150.begin() == BMM150_OK)
@@ -69,6 +72,7 @@ void SensorFusion::init()
   else
   {
     SerialUSB.println("BMM150 initialization failed");
+    return 1;
   }
 
   filter.begin();
@@ -83,6 +87,8 @@ void SensorFusion::init()
   {
     SerialUSB.println("GPS initialization failed");
   }
+
+  return 0;
 }
 
 void SensorFusion::update()
@@ -175,21 +181,15 @@ void SensorFusion::readGPS()
 
 void SensorFusion::fuseData()
 {
-  float roll, pitch, yaw;
-
   filter.update(tempData.gyro[0], tempData.gyro[1], tempData.gyro[2],
                 tempData.accelerometer[0], tempData.accelerometer[1], tempData.accelerometer[2],
                 tempData.magnetometer[0], tempData.magnetometer[1], tempData.magnetometer[2]);
 
-  roll = filter.getRoll();
-  pitch = filter.getPitch();
-  yaw = filter.getYaw();
+  finalData.orientation[0] = filter.getRoll();
+  finalData.orientation[1] = filter.getPitch();
+  finalData.orientation[2] = filter.getYaw();
 
-  finalData.orientation[0] = roll;  // Roll (rad)
-  finalData.orientation[1] = pitch; // Pitch (rad)
-  finalData.orientation[2] = yaw;   // Yaw (rad)
-
-  finalData.altitude = (tempData.altitudeBME + tempData.altitudeBMP) / 2;
+  finalData.altitude = tempData.altitudeBME;
   if (finalData.GPSValid)
   {
     finalData.altitude = (finalData.altitude + tempData.altitudeGPS) / 2; // GPS altitude
@@ -198,6 +198,11 @@ void SensorFusion::fuseData()
   finalData.rotationSpeed[0] = tempData.gyro[0]; // Rotation around X-axis
   finalData.rotationSpeed[1] = tempData.gyro[1]; // Rotation around Y-axis
   finalData.rotationSpeed[2] = tempData.gyro[2]; // Rotation around Z-axis
+
+  finalData.temperature = tempData.temperatureBME;
+  finalData.pressure = tempData.pressureBME;
+  finalData.latitude = tempData.latitudeGPS;
+  finalData.longitude = tempData.longitudeGPS;
 }
 
 void SensorFusion::calculateAcceleration()

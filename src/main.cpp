@@ -1,6 +1,7 @@
 #include "../../include/header.h"
 
 #include <Arduino.h>
+#include <vector>
 #include <SensorFusion.h>
 #include <StateMachine.h>
 #include <Telemetry.h>
@@ -23,10 +24,19 @@ void setup()
   setupLed();
   startupBlink();
 
-  stateMachine.init();
-  sensorFusion.init();
-  loraManager.init();
-  // telemetry.init();
+  bool stateMachineInit = stateMachine.init();
+  setLed(stateMachineInit ? PINK : BLUE, {0});
+
+  bool sensorFusionInit = sensorFusion.init();
+  setLed(sensorFusionInit ? PINK : BLUE, {1});
+
+  bool loraManagerInit = loraManager.init();
+  setLed(loraManagerInit ? PINK : BLUE, {2});
+
+  bool telemetryInit = telemetry.init();
+  setLed(telemetryInit ? PINK : BLUE, {3});
+
+  setLed(stateMachineInit && sensorFusionInit && loraManagerInit && telemetryInit ? GREEN : RED, {0, 1, 2, 3});
   setupBuzzer();
 
   startupSound();

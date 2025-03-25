@@ -13,13 +13,13 @@ void setFlag()
   transmitEnd = true;
 }
 
-bool LoRaManager::init()
+int LoRaManager::init()
 {
   int state = radio.begin(LORA_FREQUENCY);
   if (state != RADIOLIB_ERR_NONE)
   {
     SerialUSB.println("LoRa initialization failed");
-    return false;
+    return 1;
   }
   else
   {
@@ -34,7 +34,7 @@ bool LoRaManager::init()
   byte startByte[1] = {0x00};
   radio.startTransmit(startByte, 1);
 
-  return true;
+  return 0;
 }
 
 void LoRaManager::sendTelemetry(const SensorData &data, const ProbeState &state)

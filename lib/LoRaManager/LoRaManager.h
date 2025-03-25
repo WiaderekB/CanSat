@@ -8,7 +8,7 @@ class LoRaManager
 {
 public:
   LoRaManager(StateMachine &stateMachine, SensorFusion &sensorFusion);
-  bool init();
+  int init();
   void sendTelemetry(const SensorData &data, const ProbeState &state);
   void processIncoming();
 

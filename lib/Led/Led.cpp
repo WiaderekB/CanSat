@@ -1,45 +1,78 @@
 #include <Arduino.h>
+#include <vector>
 #include "../../include/header.h"
 #include <Adafruit_NeoPixel.h>
+#include "Led.h"
 
-Adafruit_NeoPixel pixels(RGB_COUNT, RGB_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ledDown(RGB_DOWN_COUNT, RGB_DOWN_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ledUp(RGB_UP_COUNT, RGB_UP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setupLed()
 {
-  pixels.begin();
+  ledDown.begin();
+  ledUp.begin();
 }
 
 void startupBlink()
 {
-  pixels.clear();
+  ledDown.clear();
 
-  for (int i = 0; i < RGB_COUNT / 2; i++)
+  for (int i = 0; i < RGB_DOWN_COUNT / 2; i++)
   {
-    pixels.setPixelColor(i, pixels.Color(150, 0, 0));
-    pixels.setPixelColor(i + 6, pixels.Color(150, 0, 0));
-    pixels.show();
+    ledDown.setPixelColor(i, ledDown.Color(150, 0, 0));
+    ledDown.setPixelColor(i + 6, ledDown.Color(150, 0, 0));
+    ledDown.show();
     delay(75);
   }
 
   delay(150);
-  for (int i = 0; i < RGB_COUNT; i++)
+  for (int i = 0; i < RGB_DOWN_COUNT; i++)
   {
-    pixels.setPixelColor(i, pixels.Color(150, 150, 150));
+    ledDown.setPixelColor(i, ledDown.Color(150, 150, 150));
   }
-  pixels.show();
+  ledDown.show();
 }
 
 void blinkDone()
 {
-  for (int i = 11; i >= RGB_COUNT / 2; i--)
+  for (int i = 11; i >= RGB_DOWN_COUNT / 2; i--)
   {
-    pixels.setPixelColor(i, pixels.Color(150, 0, 0));
-    pixels.setPixelColor(i - 6, pixels.Color(150, 0, 0));
-    pixels.show();
+    ledDown.setPixelColor(i, ledDown.Color(150, 0, 0));
+    ledDown.setPixelColor(i - 6, ledDown.Color(150, 0, 0));
+    ledDown.show();
     delay(75);
   }
   delay(50);
 
-  pixels.clear();
-  pixels.show();
+  ledDown.clear();
+  ledDown.show();
+}
+
+void setLed(uint32_t color, std::vector<uint8_t> id, Leds leds)
+{
+  for (auto i : id)
+  {
+    if (leds == Leds::DOWN)
+    {
+      ledDown.setPixelColor(i, color);
+    }
+    else
+    {
+      ledUp.setPixelColor(i, color);
+    }
+  }
+}
+
+void clearLed(Leds leds)
+{
+  if (leds == Leds::DOWN)
+  {
+    ledDown.clear();
+    ledDown.show();
+  }
+  else
+  {
+    ledUp.clear();
+    ledUp.show();
+  }
 }

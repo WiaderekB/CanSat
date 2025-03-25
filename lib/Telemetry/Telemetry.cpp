@@ -10,7 +10,12 @@ bool Telemetry::init()
 {
   if (!SD.begin(11))
   {
+    SerialUSB.println("SD initialization failed");
     return false;
+  }
+  else
+  {
+    SerialUSB.println("SD initialized");
   }
   sdInitialized = true;
   return true;
