@@ -15,7 +15,7 @@ TinyGPSPlus gps;
 DFRobot_BMM150_I2C bmm150(&Wire, I2C_ADDRESS_4);
 
 // Sensor calibration
-#define ALPHA 0.75
+#define ALPHA 0.6
 float hardIronOffset[3] = {1.3080, 2.3450, -24.1910};
 float softIronMatrix[3][3] = {{0.0678, 0.0000, 0.0000},
                               {0.0000, 0.0503, 0.0000},
@@ -255,24 +255,24 @@ void SensorFusion::fuseData()
     finalData.altitude = tempData.altitudeGPS; // GPS altitude
   }
 
-  finalData.rotationSpeed[0] = tempData.gyro[0]; // Rotation around X-axis
-  finalData.rotationSpeed[1] = tempData.gyro[1]; // Rotation around Y-axis
-  finalData.rotationSpeed[2] = tempData.gyro[2]; // Rotation around Z-axis
+  finalData.rotationSpeed[0] = ALPHA * tempData.gyro[0] + (1 - ALPHA) * finalData.rotationSpeed[0];
+  finalData.rotationSpeed[1] = ALPHA * tempData.gyro[1] + (1 - ALPHA) * finalData.rotationSpeed[1];
+  finalData.rotationSpeed[2] = ALPHA * tempData.gyro[2] + (1 - ALPHA) * finalData.rotationSpeed[2];
 }
-
 void SensorFusion::calculateAcceleration()
 {
-  const float roll = finalData.orientation[0];
-  const float pitch = finalData.orientation[1];
-  const float yaw = finalData.orientation[2];
+  // Convert orientation angles from degrees to radians
+  const float roll_rad = radians(finalData.orientation[0]);
+  const float pitch_rad = radians(finalData.orientation[1]);
+  const float yaw_rad = radians(finalData.orientation[2]);
 
   // Calculate trigonometric terms
-  const float cr = cos(roll);
-  const float sr = sin(roll);
-  const float cp = cos(pitch);
-  const float sp = sin(pitch);
-  const float cy = cos(yaw);
-  const float sy = sin(yaw);
+  const float cr = cos(roll_rad);
+  const float sr = sin(roll_rad);
+  const float cp = cos(pitch_rad);
+  const float sp = sin(pitch_rad);
+  const float cy = cos(yaw_rad);
+  const float sy = sin(yaw_rad);
 
   // Get raw accelerometer data (assuming m/s²)
   const float ax = tempData.accelerometer[0];
@@ -295,25 +295,48 @@ void SensorFusion::calculateAcceleration()
   // Apply rotation to accelerometer data
   float ax_world = R00 * ax + R01 * ay + R02 * az;
   float ay_world = R10 * ax + R11 * ay + R12 * az;
-  float az_world = R20 * ax + R21 * ay + R22 * az - 9.81;
+  float az_world = R20 * ax + R21 * ay + R22 * az;
 
-  // Apply complementary filter to reduce noise
-  constexpr float FILTER_GAIN = 0.15f;
-  finalData.acceleration[0] = FILTER_GAIN * ax_world + (1 - FILTER_GAIN) * finalData.acceleration[0];
-  finalData.acceleration[1] = FILTER_GAIN * ay_world + (1 - FILTER_GAIN) * finalData.acceleration[1];
-  finalData.acceleration[2] = FILTER_GAIN * az_world + (1 - FILTER_GAIN) * finalData.acceleration[2];
+  // Subtract gravity (Z-component in world frame)
+  az_world -= 9.81;
+
+  finalData.acceleration[0] = ALPHA * ax_world + (1 - ALPHA) * finalData.acceleration[0];
+  finalData.acceleration[1] = ALPHA * ay_world + (1 - ALPHA) * finalData.acceleration[1];
+  finalData.acceleration[2] = ALPHA * az_world + (1 - ALPHA) * finalData.acceleration[2];
 }
 
 void SensorFusion::calculateVelocity()
 {
-  // Simple velocity integration (no damping)
-  static float prevTime = 0;
-  float dt = (millis() - prevTime) / 1000.0f; // Time in seconds
-  prevTime = millis();
+  static uint32_t prevTime = millis();
+  uint32_t currentTime = millis();
+  float dt = (currentTime - prevTime) / 1000.0f; // Time in seconds
+  prevTime = currentTime;
 
+  // Integrate acceleration to get velocity (with drift mitigation)
   finalData.velocity[0] += finalData.acceleration[0] * dt;
   finalData.velocity[1] += finalData.acceleration[1] * dt;
   finalData.velocity[2] += finalData.acceleration[2] * dt;
+
+  // Simple drift reduction: reset velocity if acceleration is near zero and device is stationary
+  constexpr float ACCEL_THRESHOLD = 0.05f;
+  constexpr float VELOCITY_THRESHOLD = 0.025f;
+  if (fabs(finalData.acceleration[0]) < ACCEL_THRESHOLD &&
+      fabs(finalData.acceleration[1]) < ACCEL_THRESHOLD &&
+      fabs(finalData.acceleration[2]) < ACCEL_THRESHOLD)
+  {
+    // Decay velocity to zero if no significant acceleration
+    finalData.velocity[0] *= 0.95;
+    finalData.velocity[1] *= 0.95;
+    finalData.velocity[2] *= 0.95;
+  }
+
+  // Prevent tiny residual velocities
+  if (fabs(finalData.velocity[0]) < VELOCITY_THRESHOLD)
+    finalData.velocity[0] = 0;
+  if (fabs(finalData.velocity[1]) < VELOCITY_THRESHOLD)
+    finalData.velocity[1] = 0;
+  if (fabs(finalData.velocity[2]) < VELOCITY_THRESHOLD)
+    finalData.velocity[2] = 0;
 }
 
 const SensorData &SensorFusion::getData() const
