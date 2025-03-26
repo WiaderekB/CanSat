@@ -39,11 +39,11 @@ int SensorFusion::init()
   if (mpu.testConnection())
   {
     SerialUSB.println("MPU6050 initialized");
-    mpu.setXAccelOffset(0);
-    mpu.setYAccelOffset(0);
-    mpu.setZAccelOffset(0);
-    mpu.setXGyroOffset(0);
-    mpu.setYGyroOffset(0);
+    mpu.setXAccelOffset(1);
+    mpu.setYAccelOffset(-1);
+    mpu.setZAccelOffset(8);
+    mpu.setXGyroOffset(1);
+    mpu.setYGyroOffset(2);
     mpu.setZGyroOffset(0);
     mpu.CalibrateAccel(7);
     mpu.CalibrateGyro(7);
