@@ -21,7 +21,7 @@ float softIronMatrix[3][3] = {{0.0678, 0.0000, 0.0000},
                               {0.0000, 0.0503, 0.0000},
                               {0.0000, 0.0000, 0.0465}};
 
-int SensorFusion::init()
+bool SensorFusion::init()
 {
   Wire.begin();
 
@@ -32,7 +32,7 @@ int SensorFusion::init()
   else
   {
     SerialUSB.println("BME280 initialization failed");
-    return 1;
+    return false;
   }
 
   mpu.initialize();
@@ -51,7 +51,7 @@ int SensorFusion::init()
   else
   {
     SerialUSB.println("MPU6050 initialization failed");
-    return 1;
+    return false;
   }
 
   if (bmm150.begin() == BMM150_OK)
@@ -65,7 +65,7 @@ int SensorFusion::init()
   else
   {
     SerialUSB.println("BMM150 initialization failed");
-    return 1;
+    return false;
   }
 
   filter.begin();
@@ -81,7 +81,7 @@ int SensorFusion::init()
     SerialUSB.println("GPS initialization failed");
   }
 
-  return 0;
+  return true;
 }
 
 void SensorFusion::update()

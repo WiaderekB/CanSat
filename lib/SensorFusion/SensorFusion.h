@@ -31,7 +31,7 @@ struct TempSensorData
 class SensorFusion
 {
 public:
-  int init();
+  bool init();
   void update();
   const SensorData &getData() const;
 

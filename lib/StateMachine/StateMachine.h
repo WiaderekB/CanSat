@@ -16,7 +16,7 @@ enum class ProbeState
 class StateMachine
 {
 public:
-  int init();
+  bool init();
   void updateState(const SensorData &data);
   void setProbeState(ProbeState state);
   const ProbeState &getCurrentState() const;

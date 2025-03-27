@@ -19,33 +19,34 @@ void startupBlink()
 
   for (int i = 0; i < RGB_DOWN_COUNT / 2; i++)
   {
-    ledDown.setPixelColor(i, ledDown.Color(150, 0, 0));
-    ledDown.setPixelColor(i + 6, ledDown.Color(150, 0, 0));
+    ledDown.setPixelColor(i, YELLOW);
+    ledDown.setPixelColor(i + 6, YELLOW);
+    if (i % 3 == 0)
+    {
+      ledUp.setPixelColor(int(i / 3), YELLOW);
+      ledUp.show();
+    }
     ledDown.show();
     delay(75);
   }
-
-  delay(150);
-  for (int i = 0; i < RGB_DOWN_COUNT; i++)
-  {
-    ledDown.setPixelColor(i, ledDown.Color(150, 150, 150));
-  }
-  ledDown.show();
 }
 
-void blinkDone()
+void blinkDone(bool success)
 {
-  for (int i = 11; i >= RGB_DOWN_COUNT / 2; i--)
+  auto color = success ? GREEN : RED;
+  for (int i = 0; i < RGB_DOWN_COUNT / 2; i++)
   {
-    ledDown.setPixelColor(i, ledDown.Color(150, 0, 0));
-    ledDown.setPixelColor(i - 6, ledDown.Color(150, 0, 0));
-    ledDown.show();
-    delay(75);
+    ledDown.setPixelColor(i, color);
+    ledDown.setPixelColor(i + 6, color);
+    if (i % 3 == 0)
+    {
+      ledUp.setPixelColor(int(i / 3), color);
+    }
   }
-  delay(50);
 
-  ledDown.clear();
+  ledUp.show();
   ledDown.show();
+  delay(50);
 }
 
 void setLed(uint32_t color, std::vector<uint8_t> id, Leds leds)

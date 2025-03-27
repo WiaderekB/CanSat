@@ -11,14 +11,23 @@ bool Telemetry::init()
   if (!SD.begin(11))
   {
     SerialUSB.println("SD initialization failed");
-    return false;
+    sdInitialized = false;
   }
   else
   {
     SerialUSB.println("SD initialized");
+    sdInitialized = true;
+
+    // Print header
+    logFile = SD.open("datalog.csv", FILE_WRITE);
+    if (logFile)
+    {
+      logFile.println("Timestamp,State,Latitude,Longitude,Satellites,GPSValid,Altitude,Temperature,Pressure,Humidity,OrientationX,OrientationY,OrientationZ,AccelerationX,AccelerationY,AccelerationZ,VelocityX,VelocityY,VelocityZ");
+      logFile.close();
+    }
   }
-  sdInitialized = true;
-  return true;
+
+  return sdInitialized;
 }
 
 void Telemetry::logData(const SensorData &data, const ProbeState &state)
@@ -52,7 +61,10 @@ String Telemetry::formatData(const SensorData &data, const ProbeState &state)
   output += String(data.orientation[2]) + ",";
   output += String(data.acceleration[0]) + ",";
   output += String(data.acceleration[1]) + ",";
-  output += String(data.acceleration[2]);
-  SerialUSB.println(output);
+  output += String(data.acceleration[2]) + ",";
+  output += String(data.velocity[0]) + ",";
+  output += String(data.velocity[1]) + ",";
+  output += String(data.velocity[2]);
+
   return output;
 }

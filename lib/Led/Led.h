@@ -1,7 +1,7 @@
 #include <vector>
 void setupLed();
 void startupBlink();
-void blinkDone();
+void blinkDone(bool success);
 
 typedef enum
 {

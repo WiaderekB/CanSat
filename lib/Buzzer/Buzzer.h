@@ -1,4 +1,4 @@
 void setupBuzzer();
-void startupSound();
+void startupSound(bool success);
 void buzzerOn();
 void buzzerOff();

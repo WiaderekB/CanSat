@@ -1,10 +1,10 @@
 #include "StateMachine.h"
 #include <Arduino.h>
 
-int StateMachine::init()
+bool StateMachine::init()
 {
   currentState = ProbeState::STANDBY;
-  return 0;
+  return true;
 }
 
 void StateMachine::updateState(const SensorData &data)

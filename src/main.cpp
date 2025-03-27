@@ -24,25 +24,28 @@ void setup()
   SerialUSB.begin(115200);
 
   setupLed();
+  setupBuzzer();
   startupBlink();
 
   bool stateMachineInit = stateMachine.init();
-  setLed(stateMachineInit ? PINK : BLUE, {0});
+  setLed(stateMachineInit ? BLUE : MAGENTA, {0});
+  setLed(stateMachineInit ? BLUE : MAGENTA, {0, 1, 2}, DOWN);
 
   bool sensorFusionInit = sensorFusion.init();
-  setLed(sensorFusionInit ? PINK : BLUE, {1});
+  setLed(sensorFusionInit ? BLUE : MAGENTA, {1});
+  setLed(sensorFusionInit ? BLUE : MAGENTA, {3, 4, 5}, DOWN);
 
   bool loraManagerInit = loraManager.init();
-  setLed(loraManagerInit ? PINK : BLUE, {2});
+  setLed(loraManagerInit ? BLUE : MAGENTA, {2});
+  setLed(loraManagerInit ? BLUE : MAGENTA, {6, 7, 8}, DOWN);
 
   bool telemetryInit = telemetry.init();
-  setLed(telemetryInit ? PINK : BLUE, {3});
+  setLed(telemetryInit ? BLUE : MAGENTA, {3});
+  setLed(telemetryInit ? BLUE : MAGENTA, {9, 10, 11}, DOWN);
 
-  setLed(stateMachineInit && sensorFusionInit && loraManagerInit && telemetryInit ? GREEN : RED, {0, 1, 2, 3});
-  setupBuzzer();
-
-  startupSound();
-  blinkDone();
+  bool successInit = stateMachineInit && sensorFusionInit && loraManagerInit && telemetryInit;
+  blinkDone(successInit);
+  startupSound(successInit);
 }
 
 void loop()
@@ -57,7 +60,7 @@ void loop()
 
   // Handle telemetry
   loraManager.sendTelemetry(sensorFusion.getData(), stateMachine.getCurrentState());
-  // telemetry.logData(sensorFusion.getData(), stateMachine.getCurrentState());
+  telemetry.logData(sensorFusion.getData(), stateMachine.getCurrentState());
 
   // Handle incoming commands
   // loraManager.processIncoming();
