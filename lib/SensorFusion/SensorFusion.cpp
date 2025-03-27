@@ -252,7 +252,7 @@ void SensorFusion::fuseData()
   finalData.altitude = tempData.altitudeBME;
   if (finalData.GPSValid)
   {
-    finalData.altitude = tempData.altitudeGPS; // GPS altitude
+    finalData.altitude = tempData.altitudeGPS * 0.8 + tempData.altitudeBME * 0.2;
   }
 
   finalData.rotationSpeed[0] = ALPHA * tempData.gyro[0] + (1 - ALPHA) * finalData.rotationSpeed[0];

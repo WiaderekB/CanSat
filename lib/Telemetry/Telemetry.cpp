@@ -22,7 +22,7 @@ bool Telemetry::init()
     logFile = SD.open("datalog.csv", FILE_WRITE);
     if (logFile)
     {
-      logFile.println("Timestamp,State,Latitude,Longitude,Satellites,GPSValid,Altitude,Temperature,Pressure,Humidity,OrientationX,OrientationY,OrientationZ,AccelerationX,AccelerationY,AccelerationZ,VelocityX,VelocityY,VelocityZ");
+      logFile.println("Timestamp,State,Latitude,Longitude,Satellites,GPSValid,Altitude,Temperature,Pressure,Humidity,OrientationX,OrientationY,OrientationZ,AccelerationX,AccelerationY,AccelerationZ,VelocityX,VelocityY,VelocityZ,RotationSpeedX,RotationSpeedY,RotationSpeedZ");
       logFile.close();
     }
   }
@@ -64,7 +64,10 @@ String Telemetry::formatData(const SensorData &data, const ProbeState &state)
   output += String(data.acceleration[2]) + ",";
   output += String(data.velocity[0]) + ",";
   output += String(data.velocity[1]) + ",";
-  output += String(data.velocity[2]);
+  output += String(data.velocity[2]) + ",";
+  output += String(data.rotationSpeed[0]) + ",";
+  output += String(data.rotationSpeed[1]) + ",";
+  output += String(data.rotationSpeed[2]);
 
   return output;
 }
